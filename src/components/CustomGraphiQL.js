@@ -73,7 +73,12 @@ export default class CustomGraphiQL extends Component {
     if (!currentURL) {
       return;
     }
+    this.data = this.props.transport;
     this.fetchGraphQLSchema(currentURL);
+  }
+
+  componentWillReceiveProps(nextProps) {
+    this.data = nextProps.transport;
   }
 
   @autobind
@@ -138,26 +143,25 @@ export default class CustomGraphiQL extends Component {
 
   @autobind
   async fetchGraphQLSchema(url) {
+    const http = this.data.httpClient
     try {
       const headers = this.state.headers;
       const graphQLParams = { query: introspectionQuery };
-      const response = await fetch(url, {
-        method: 'post',
-        headers: {
-          'Content-Type': 'application/json',
-          ...headers
-        },
-        body: JSON.stringify(graphQLParams)
-      });
-
-      // GET method
-      // const response = await fetch(`${url}?query=${encodeURIComponent(graphQLParams.query)}}&variables=${encodeURIComponent('{}')}`, { method: 'get' });
+      // const response = await fetch(url, {
+      //   method: 'post',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     ...headers
+      //   },
+      //   body: JSON.stringify(graphQLParams)
+      // });
+      // const result = await response.json();
+      const result = await http.post(url, graphQLParams)
       
-      const result = await response.json();
       if (result.errors) {
         throw new Error(JSON.stringify(result.errors));
       }
-      const schema = buildClientSchema(result.data);
+      const schema = buildClientSchema(result.data.data);
       this.storageSet('currentURL', url);
       this.setState({
         schema,
@@ -177,6 +181,7 @@ export default class CustomGraphiQL extends Component {
 
   @autobind
   async graphQLFetcher(graphQLParams) {
+    const http = this.data.httpClient
     try {
       const headers = this.state.headers;
       const graphQLEndpoint = this.state.graphQLEndpoint;
@@ -184,19 +189,11 @@ export default class CustomGraphiQL extends Component {
         console.warn('Please set a GraphQL endpoint');
         return null;
       }
-      const response = await fetch(graphQLEndpoint, {
-        method: 'post',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-          ...headers
-        },
-        body: JSON.stringify(graphQLParams),
-        credentials: 'include',
-      });
-      const result = await response.json();
-      this.state.response = JSON.stringify(result, null, 2);
-      return result;
+
+      const result = await http.post(graphQLEndpoint, graphQLParams)
+      
+      this.state.response = JSON.stringify(result.data, null, 2);
+      return result.data;
     } catch (error) {
       const result = {
         error: error.toString()
@@ -268,13 +265,13 @@ export default class CustomGraphiQL extends Component {
 
     return (
       <div style={styles.container}>
-        <TopBar
+        {/* <TopBar
           schemaFetchError={this.state.schemaFetchError}
           fetchGraphQLSchema={this.fetchGraphQLSchema}
           graphQLEndpoint={this.state.graphQLEndpoint}
           headers={this.state.headers}
           onEditHeadersButtonPressed={this.showEditHeaderModal}
-        />
+        /> */}
         <GraphiQL
           fetcher={this.graphQLFetcher}
           schema={this.state.schema}
@@ -288,6 +285,9 @@ export default class CustomGraphiQL extends Component {
           onToggleDocs={this.props.onToggleDocs}
           getDefaultFieldNames={this.props.getDefaultFieldNames}
         >
+          <GraphiQL.Logo>
+            Phenix GraphQL API
+          </GraphiQL.Logo>
           <GraphiQL.Toolbar>
             <div style={styles.toolBarButtons}>
               <GenerateMutation
