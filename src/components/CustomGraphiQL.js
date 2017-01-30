@@ -195,9 +195,9 @@ export default class CustomGraphiQL extends Component {
       this.state.response = JSON.stringify(result.data, null, 2);
       return result.data;
     } catch (error) {
-      const result = {
-        error: error.toString()
-      };
+      console.dir(error)
+      error.response.data
+      const result = (error.response || {}).data || 'n/a'
       this.state.response = JSON.stringify(result, null, 2);
       return result;
     }
@@ -252,6 +252,12 @@ export default class CustomGraphiQL extends Component {
     }
 
     this.storageSet(`${currentURL}:variables`, variablesString);
+  }
+
+  @autobind
+  onFetchButtonPressed() {
+    const url = this.state.graphQLEndpoint;
+    this.fetchGraphQLSchema && this.fetchGraphQLSchema(url);
   }
 
   render() {
@@ -309,6 +315,9 @@ export default class CustomGraphiQL extends Component {
                 setQueryFromString={this.setQueryFromString}
                 getCurrentResponse={this.getCurrentResponse}
               />
+              <div style={{position: 'relative'}} onClick={this.onFetchButtonPressed} >
+                <a className="toolbar-button">Reload Schema</a>
+              </div>
               {toolbar}
             </div>
           </GraphiQL.Toolbar>
